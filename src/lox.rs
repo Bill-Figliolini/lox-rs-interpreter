@@ -1,14 +1,11 @@
 use anyhow::{Ok, Result};
 
-#[derive(Debug, PartialEq)]
-struct Token {}
+mod common;
+mod scanner;
+use common::*;
 
-fn scan(_source: Vec<u8>) -> Result<Vec<Token>> {
-    Ok(Vec::new())
-}
-
-pub(super) fn run(source: Vec<u8>) -> Result<()> {
-    let tokens = scan(source)?;
+pub fn run(source: Vec<u8>) -> Result<()> {
+    let tokens = scanner::scan(source)?;
     for token in tokens {
         println!("{:?}", token)
     }
