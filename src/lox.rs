@@ -1,14 +1,16 @@
-#[derive(Debug, PartialEq)]
-enum Tokens {}
+use anyhow::{Ok, Result};
 
-fn scan(_source: Vec<u8>) -> Vec<Tokens> {
-    Vec::new()
+#[derive(Debug, PartialEq)]
+struct Token {}
+
+fn scan(_source: Vec<u8>) -> Result<Vec<Token>> {
+    Ok(Vec::new())
 }
 
-pub(super) fn run(source: Vec<u8>) {
-    let tokens = scan(source);
-
+pub(super) fn run(source: Vec<u8>) -> Result<()> {
+    let tokens = scan(source)?;
     for token in tokens {
         println!("{:?}", token)
     }
+    Ok(())
 }

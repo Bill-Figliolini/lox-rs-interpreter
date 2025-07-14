@@ -1,11 +1,14 @@
 mod lox;
+use anyhow;
 use std::{fs, io, process};
 
 pub fn run_file(input_file: String) {
     let file_contents = fs::read(input_file);
     match file_contents {
         Ok(file_contents) => {
-            lox::run(file_contents);
+            if let Err(e) = lox::run(file_contents) {
+                eprintln!("Error: {}", e.to_string());
+            }
         }
         Err(e) => {
             eprintln!("Error Reading File: {}", e.to_string());
@@ -22,7 +25,9 @@ pub fn run_sandbox() {
             if val == 0 {
                 break;
             }
-            lox::run(line.as_bytes().to_vec());
+            if let Err(e) = lox::run(line.as_bytes().to_vec()) {
+                eprintln!("{}", e);
+            }
         } else {
             eprintln!("Error: ")
         };
