@@ -1,17 +1,16 @@
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
-    //Pairwise Single Character
+    //Single Character
     LeftParen,
     RightParen,
     LeftBrace,
     RightBrace,
-
-    //General Single Character
     Comma,
     Dot,
     Minus,
     Plus,
     Semicolon,
+    Slash,
     Star,
 
     //Single or Double Character
@@ -25,9 +24,9 @@ pub enum TokenType {
     LessEqual,
 
     //Literals
-    Identifier,
-    String,
-    Number,
+    Identifier(usize),
+    String(usize),
+    Number(f64),
 
     //Keywords
     And,
@@ -53,15 +52,10 @@ pub enum TokenType {
 #[derive(Debug, PartialEq)]
 pub struct Token {
     token_type: TokenType,
-    literal_id: Option<usize>,
     line: usize,
 }
 impl Token {
     pub fn new(token_type: TokenType, line: usize) -> Token {
-        Token {
-            token_type,
-            literal_id: None,
-            line,
-        }
+        Token { token_type, line }
     }
 }

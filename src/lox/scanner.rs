@@ -15,7 +15,42 @@ impl Scanner {
         Scanner { output, line }
     }
 
-    fn scan_tokens(mut self, source_stream: impl IntoIterator) -> Result<Vec<Token>> {
+    fn scan_token(&mut self, source_byte: u8) {
+        match source_byte {
+            b'(' => self
+                .output
+                .push(Token::new(TokenType::LeftParen, self.line)),
+            b')' => self
+                .output
+                .push(Token::new(TokenType::RightParen, self.line)),
+
+            b'{' => self
+                .output
+                .push(Token::new(TokenType::LeftBrace, self.line)),
+            b'}' => self
+                .output
+                .push(Token::new(TokenType::RightBrace, self.line)),
+
+            b',' => self.output.push(Token::new(TokenType::Comma, self.line)),
+            b'.' => self.output.push(Token::new(TokenType::Dot, self.line)),
+
+            b'-' => self.output.push(Token::new(TokenType::Minus, self.line)),
+            b'+' => self.output.push(Token::new(TokenType::Plus, self.line)),
+            b'*' => self.output.push(Token::new(TokenType::Star, self.line)),
+
+            b';' => self
+                .output
+                .push(Token::new(TokenType::Semicolon, self.line)),
+            _ => {}
+        }
+    }
+
+    fn scan_tokens(mut self, source: Vec<u8>) -> Result<Vec<Token>> {
+        let mut source_stream = source.into_iter();
+        while let Some(c) = source_stream.next() {
+            self.scan_token(c);
+        }
+
         self.output.push(Token::new(TokenType::EOF, self.line));
         Ok(self.output)
     }
@@ -23,7 +58,7 @@ impl Scanner {
 
 pub fn scan(source: Vec<u8>) -> Result<Vec<Token>> {
     let scanner = Scanner::new();
-    scanner.scan_tokens(source.into_iter())
+    scanner.scan_tokens(source)
 }
 
 #[cfg(test)]
@@ -39,5 +74,10 @@ mod test {
 
             assert_eq!(expected_output, actual_output);
         }
+    }
+    mod single_character_inputs {
+        use super::*;
+        #[test]
+        fn matches_properly() {}
     }
 }
