@@ -59,3 +59,7 @@ impl Token {
         Token { token_type, line }
     }
 }
+
+pub fn report_error(line_number: usize, error_message: &str) {
+    eprintln!("[line {line_number}] Error: {error_message}");
+}
