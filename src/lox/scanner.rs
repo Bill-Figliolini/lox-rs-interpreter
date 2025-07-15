@@ -1,6 +1,14 @@
 use crate::lox::common::{Token, TokenType, report_error};
 use anyhow::Result;
 
+/// # struct canner
+/// Contains state for the process of scanning through code that the user input
+///
+/// ## Member Variables:
+/// source - Holds a pointer to the current index in the code that is being Scanned.
+///           Can peek ahead one space
+/// output - Vector of Tokens that will be emitted once scanning is complete
+/// line   - The current Line Number,   
 struct Scanner {
     source: std::iter::Peekable<std::vec::IntoIter<u8>>,
     output: Vec<Token>,
@@ -8,6 +16,12 @@ struct Scanner {
 }
 
 impl Scanner {
+    /// # Scanner::new()
+    /// ## Input:
+    ///     Consumes a vector of bytes, which will be converted into a peekable iterator
+    ///     for rapid traversal and ease of storage
+    /// ## Output:
+    ///     struct Scanner, with default values set with an empty Vec<Token> and line 1
     fn new(source: Vec<u8>) -> Scanner {
         let source = source.into_iter().peekable();
         let output = Vec::new();
@@ -118,6 +132,13 @@ pub fn scan(source: Vec<u8>) -> Result<Vec<Token>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    fn assemble_token_array(input: Vec<(TokenType, usize)>) -> Vec<Token> {
+        input
+            .into_iter()
+            .map(|(tt, ln)| Token::new(tt, ln))
+            .collect()
+    }
+
     mod empty_input {
         use super::*;
         #[test]
@@ -209,6 +230,41 @@ mod test {
                 for (input, output) in input_output_vec {
                     double_char_test_negative(input, output);
                 }
+            }
+        }
+        mod comments {
+            use super::*;
+            #[test]
+            fn double_slash_ignores_rest_until_end_of_line() {
+                let input: Vec<u8> = "()\\\\qwerty {}\n {}".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                    (TokenType::LeftBrace, 2),
+                    (TokenType::RightBrace, 2),
+                    (TokenType::EOF, 2),
+                ]);
+
+                let actual_output = scan(input).expect("Scan of known text should not fail");
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn single_slashes_are_not_comments_and_do_not_ignore() {
+                let input: Vec<u8> = "()\\ \\{}\n {}".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                    (TokenType::Slash, 1),
+                    (TokenType::Slash, 1),
+                    (TokenType::LeftBrace, 1),
+                    (TokenType::RightBrace, 1),
+                    (TokenType::LeftBrace, 2),
+                    (TokenType::RightBrace, 2),
+                    (TokenType::EOF, 2),
+                ]);
+
+                let actual_output = scan(input).expect("Scan of known text should not fail");
+                assert_eq!(expected_output, actual_output);
             }
         }
     }
