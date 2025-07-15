@@ -49,6 +49,38 @@ impl Scanner {
             b';' => self
                 .output
                 .push(Token::new(TokenType::Semicolon, self.line)),
+            b'!' => {
+                let result = if self.match_next(b'=') {
+                    Token::new(TokenType::BangEqual, self.line)
+                } else {
+                    Token::new(TokenType::Bang, self.line)
+                };
+                self.output.push(result);
+            }
+            b'=' => {
+                let result = if self.match_next(b'=') {
+                    Token::new(TokenType::EqualEqual, self.line)
+                } else {
+                    Token::new(TokenType::Equal, self.line)
+                };
+                self.output.push(result);
+            }
+            b'>' => {
+                let result = if self.match_next(b'=') {
+                    Token::new(TokenType::GreaterEqual, self.line)
+                } else {
+                    Token::new(TokenType::Greater, self.line)
+                };
+                self.output.push(result);
+            }
+            b'<' => {
+                let result = if self.match_next(b'=') {
+                    Token::new(TokenType::LessEqual, self.line)
+                } else {
+                    Token::new(TokenType::Less, self.line)
+                };
+                self.output.push(result);
+            }
             _ => {
                 report_error(self.line, "Unexpected character.");
             }
@@ -171,13 +203,8 @@ mod test {
             }
             #[test]
             fn properly() {
-                let input = vec![b'!', b'=', b'>', b'<'];
-                let output = vec![
-                    TokenType::Bang,
-                    TokenType::Equal,
-                    TokenType::Greater,
-                    TokenType::Less,
-                ];
+                let input = vec![b'!', b'>', b'<'];
+                let output = vec![TokenType::Bang, TokenType::Greater, TokenType::Less];
                 let input_output_vec = input.into_iter().zip(output.into_iter());
                 for (input, output) in input_output_vec {
                     double_char_test_negative(input, output);
