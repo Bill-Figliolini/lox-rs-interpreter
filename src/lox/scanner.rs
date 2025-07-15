@@ -1,5 +1,4 @@
 use crate::lox::common::{Token, TokenType, report_error};
-use anyhow::Result;
 
 // Contains state for the process of scanning through code that the user input
 //
@@ -109,14 +108,13 @@ impl Scanner {
         }
     }
 
-    fn scan_tokens(mut self) -> Result<Vec<Token>> {
+    fn scan_tokens(mut self) -> Vec<Token> {
         while let Some(_) = self.source.peek() {
             self.scan_token();
         }
 
+        self.push_new_token(TokenType::EOF);
         self.output
-            .push(Token::new(TokenType::EOF, self.current_line));
-        Ok(self.output)
     }
     fn match_next(&mut self, expected: u8) -> bool {
         match self.source.peek() {
@@ -133,7 +131,7 @@ impl Scanner {
     }
 }
 
-pub fn scan(source: Vec<u8>) -> Result<Vec<Token>> {
+pub fn scan(source: Vec<u8>) -> Vec<Token> {
     let scanner = Scanner::new(source);
     scanner.scan_tokens()
 }
@@ -154,7 +152,7 @@ mod test {
         fn gets_eof() {
             let input: Vec<u8> = Vec::new();
             let expected_output: Vec<Token> = vec![Token::new(TokenType::EOF, 1)];
-            let actual_output = scan(input).expect("Scan of known text should not Fail");
+            let actual_output = scan(input);
 
             assert_eq!(expected_output, actual_output);
         }
@@ -164,7 +162,7 @@ mod test {
             let input = vec![byte];
             let expected_output: Vec<Token> =
                 vec![Token::new(result, 1), Token::new(TokenType::EOF, 1)];
-            let actual_output = scan(input).expect("Scan of known text should not Fail");
+            let actual_output = scan(input);
 
             assert_eq!(expected_output, actual_output);
         }
@@ -199,7 +197,7 @@ mod test {
                 let input = vec![byte, b'='];
                 let expected_output: Vec<Token> =
                     vec![Token::new(result, 1), Token::new(TokenType::EOF, 1)];
-                let actual_output = scan(input).expect("Scan of known text should not Fail");
+                let actual_output = scan(input);
 
                 assert_eq!(expected_output, actual_output);
             }
@@ -227,7 +225,7 @@ mod test {
                     Token::new(result, 1),
                     Token::new(TokenType::EOF, 1),
                 ];
-                let actual_output = scan(input).expect("Scan of known text should not Fail");
+                let actual_output = scan(input);
 
                 assert_eq!(expected_output, actual_output);
             }
@@ -254,7 +252,7 @@ mod test {
                     (TokenType::EOF, 2),
                 ]);
 
-                let actual_output = scan(input).expect("Scan of known text should not fail");
+                let actual_output = scan(input);
                 assert_eq!(expected_output, actual_output);
             }
             #[test]
@@ -272,9 +270,21 @@ mod test {
                     (TokenType::EOF, 2),
                 ]);
 
-                let actual_output = scan(input).expect("Scan of known text should not fail");
+                let actual_output = scan(input);
                 assert_eq!(expected_output, actual_output);
             }
+        }
+    }
+    mod literals {
+        use super::*;
+        mod string {
+            use super::*;
+        }
+        mod nubmers {
+            use super::*;
+        }
+        mod identifiers {
+            use super::*;
         }
     }
 }
