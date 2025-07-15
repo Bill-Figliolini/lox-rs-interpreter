@@ -33,7 +33,9 @@ impl Scanner {
     fn push_new_token(&mut self, token_type: TokenType) {
         self.output.push(Token::new(token_type, self.current_line));
     }
-
+    //Primary function for handling scanning the input bytes.
+    //  Consumes each byte in the source iterator, matches it with the corresponding token type, and makes a token
+    //  Works with 1 byte of lookahead, as in the case of slashes for comments, and double-character operators like ==
     fn scan_token(&mut self) {
         let source_byte = self
             .source
@@ -116,6 +118,9 @@ impl Scanner {
         self.push_new_token(TokenType::EOF);
         self.output
     }
+
+    //Peeks ahead for potential double-character matches.
+    //Returns true and pops if the peek is what the calling function expects, and false otherswise
     fn match_next(&mut self, expected: u8) -> bool {
         match self.source.peek() {
             None => false,
@@ -130,7 +135,7 @@ impl Scanner {
         }
     }
 }
-
+// Scan takes in a Vec of valid UTF8 bytes, and converts them into a Vec of Tokens for later processing.
 pub fn scan(source: Vec<u8>) -> Vec<Token> {
     let scanner = Scanner::new(source);
     scanner.scan_tokens()
@@ -279,6 +284,17 @@ mod test {
         use super::*;
         mod string {
             use super::*;
+            #[test]
+            fn matches_enclosed_in_string() {
+                let input: Vec<u8> = "\"Hello, World! ()\"".bytes().collect();
+                let expected_output = assemble_token_array(vec![(
+                    TokenType::String("Hello, World! ()".bytes().collect()),
+                    1,
+                )]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
         }
         mod nubmers {
             use super::*;
