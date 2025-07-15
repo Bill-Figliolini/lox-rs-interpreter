@@ -63,6 +63,19 @@ impl Scanner {
         self.output.push(Token::new(TokenType::EOF, self.line));
         Ok(self.output)
     }
+    fn match_next(&mut self, expected: u8) -> bool {
+        match self.source.peek() {
+            None => false,
+            Some(c) => {
+                if *c == expected {
+                    self.source.next();
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+    }
 }
 
 pub fn scan(source: Vec<u8>) -> Result<Vec<Token>> {
@@ -85,7 +98,7 @@ mod test {
         }
     }
     mod single_character_inputs {
-        fn test_template(byte: u8, result: TokenType) {
+        fn single_char_test(byte: u8, result: TokenType) {
             let input = vec![byte];
             let expected_output: Vec<Token> =
                 vec![Token::new(result, 1), Token::new(TokenType::EOF, 1)];
@@ -111,7 +124,64 @@ mod test {
             ];
             let input_output_vec = input_vec.into_iter().zip(output_vec.into_iter());
             for (input, output) in input_output_vec {
-                test_template(input, output);
+                single_char_test(input, output);
+            }
+        }
+    }
+    mod double_character_inputs {
+        use super::*;
+        mod matched {
+
+            use super::*;
+            fn double_char_test_positive(byte: u8, result: TokenType) {
+                let input = vec![byte, b'='];
+                let expected_output: Vec<Token> =
+                    vec![Token::new(result, 1), Token::new(TokenType::EOF, 1)];
+                let actual_output = scan(input).expect("Scan of known text should not Fail");
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn properly() {
+                let input = vec![b'!', b'=', b'>', b'<'];
+                let output = vec![
+                    TokenType::BangEqual,
+                    TokenType::EqualEqual,
+                    TokenType::GreaterEqual,
+                    TokenType::LessEqual,
+                ];
+                let input_output_vec = input.into_iter().zip(output.into_iter());
+                for (input, output) in input_output_vec {
+                    double_char_test_positive(input, output);
+                }
+            }
+        }
+        mod unmatched {
+            use super::*;
+            fn double_char_test_negative(byte: u8, result: TokenType) {
+                let input = vec![byte, byte];
+                let expected_output: Vec<Token> = vec![
+                    Token::new(result.clone(), 1),
+                    Token::new(result, 1),
+                    Token::new(TokenType::EOF, 1),
+                ];
+                let actual_output = scan(input).expect("Scan of known text should not Fail");
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn properly() {
+                let input = vec![b'!', b'=', b'>', b'<'];
+                let output = vec![
+                    TokenType::Bang,
+                    TokenType::Equal,
+                    TokenType::Greater,
+                    TokenType::Less,
+                ];
+                let input_output_vec = input.into_iter().zip(output.into_iter());
+                for (input, output) in input_output_vec {
+                    double_char_test_negative(input, output);
+                }
             }
         }
     }
