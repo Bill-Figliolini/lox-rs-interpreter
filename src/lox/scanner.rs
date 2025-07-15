@@ -1,36 +1,38 @@
 use crate::lox::common::{Token, TokenType, report_error};
 use anyhow::Result;
 
-/// # struct canner
-/// Contains state for the process of scanning through code that the user input
-///
-/// ## Member Variables:
-/// source - Holds a pointer to the current index in the code that is being Scanned.
-///           Can peek ahead one space
-/// output - Vector of Tokens that will be emitted once scanning is complete
-/// line   - The current Line Number,   
+// Contains state for the process of scanning through code that the user input
+//
+// ## Member Variables:
+// source - Holds a pointer to the current index in the code that is being Scanned.
+//           Can peek ahead one space
+// output - Vector of Tokens that will be emitted once scanning is complete
+// line   - The current Line Number,
 struct Scanner {
     source: std::iter::Peekable<std::vec::IntoIter<u8>>,
     output: Vec<Token>,
-    line: usize,
+    current_line: usize,
 }
 
 impl Scanner {
-    /// # Scanner::new()
-    /// ## Input:
-    ///     Consumes a vector of bytes, which will be converted into a peekable iterator
-    ///     for rapid traversal and ease of storage
-    /// ## Output:
-    ///     struct Scanner, with default values set with an empty Vec<Token> and line 1
+    // ## Input:
+    //     Consumes a vector of bytes, which will be converted into a peekable iterator
+    //     for rapid traversal and ease of storage
+    // ## Output:
+    //     struct Scanner, with default values set with an empty Vec<Token> and line 1
     fn new(source: Vec<u8>) -> Scanner {
         let source = source.into_iter().peekable();
         let output = Vec::new();
-        let line = 1;
+        let current_line = 1;
         Scanner {
             source,
             output,
-            line,
+            current_line,
         }
+    }
+
+    fn push_new_token(&mut self, token_type: TokenType) {
+        self.output.push(Token::new(token_type, self.current_line));
     }
 
     fn scan_token(&mut self) {
@@ -39,64 +41,70 @@ impl Scanner {
             .next()
             .expect("Called only when iterator is not empty");
         match source_byte {
-            b'(' => self
-                .output
-                .push(Token::new(TokenType::LeftParen, self.line)),
-            b')' => self
-                .output
-                .push(Token::new(TokenType::RightParen, self.line)),
+            b'(' => self.push_new_token(TokenType::LeftParen),
+            b')' => self.push_new_token(TokenType::RightParen),
 
-            b'{' => self
-                .output
-                .push(Token::new(TokenType::LeftBrace, self.line)),
-            b'}' => self
-                .output
-                .push(Token::new(TokenType::RightBrace, self.line)),
+            b'{' => self.push_new_token(TokenType::LeftBrace),
+            b'}' => self.push_new_token(TokenType::RightBrace),
 
-            b',' => self.output.push(Token::new(TokenType::Comma, self.line)),
-            b'.' => self.output.push(Token::new(TokenType::Dot, self.line)),
+            b',' => self.push_new_token(TokenType::Comma),
+            b'.' => self.push_new_token(TokenType::Dot),
 
-            b'-' => self.output.push(Token::new(TokenType::Minus, self.line)),
-            b'+' => self.output.push(Token::new(TokenType::Plus, self.line)),
-            b'*' => self.output.push(Token::new(TokenType::Star, self.line)),
+            b'-' => self.push_new_token(TokenType::Minus),
+            b'+' => self.push_new_token(TokenType::Plus),
+            b'*' => self.push_new_token(TokenType::Star),
 
-            b';' => self
-                .output
-                .push(Token::new(TokenType::Semicolon, self.line)),
+            b';' => self.push_new_token(TokenType::Semicolon),
             b'!' => {
                 let result = if self.match_next(b'=') {
-                    Token::new(TokenType::BangEqual, self.line)
+                    TokenType::BangEqual
                 } else {
-                    Token::new(TokenType::Bang, self.line)
+                    TokenType::Bang
                 };
-                self.output.push(result);
+                self.push_new_token(result);
             }
             b'=' => {
                 let result = if self.match_next(b'=') {
-                    Token::new(TokenType::EqualEqual, self.line)
+                    TokenType::EqualEqual
                 } else {
-                    Token::new(TokenType::Equal, self.line)
+                    TokenType::Equal
                 };
-                self.output.push(result);
+                self.push_new_token(result);
             }
             b'>' => {
                 let result = if self.match_next(b'=') {
-                    Token::new(TokenType::GreaterEqual, self.line)
+                    TokenType::GreaterEqual
                 } else {
-                    Token::new(TokenType::Greater, self.line)
+                    TokenType::Greater
                 };
-                self.output.push(result);
+                self.push_new_token(result);
             }
             b'<' => {
                 let result = if self.match_next(b'=') {
-                    Token::new(TokenType::LessEqual, self.line)
+                    TokenType::LessEqual
                 } else {
-                    Token::new(TokenType::Less, self.line)
+                    TokenType::Less
                 };
-                self.output.push(result);
+                self.push_new_token(result);
             }
+            b'\\' => {
+                if self.match_next(b'\\') {
+                    loop {
+                        match self.source.peek() {
+                            None | Some(b'\n') => break,
+                            Some(_) => {
+                                self.source.next();
+                            }
+                        }
+                    }
+                } else {
+                    self.push_new_token(TokenType::Slash)
+                }
+            }
+            b' ' | b'\t' | b'\r' => {}
+            b'\n' => self.current_line += 1,
             _ => {
-                report_error(self.line, "Unexpected character.");
+                report_error(self.current_line, "Unexpected character.");
             }
         }
     }
@@ -106,7 +114,8 @@ impl Scanner {
             self.scan_token();
         }
 
-        self.output.push(Token::new(TokenType::EOF, self.line));
+        self.output
+            .push(Token::new(TokenType::EOF, self.current_line));
         Ok(self.output)
     }
     fn match_next(&mut self, expected: u8) -> bool {
