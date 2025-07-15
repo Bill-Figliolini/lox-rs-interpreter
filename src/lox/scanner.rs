@@ -102,6 +102,7 @@ impl Scanner {
                     self.push_new_token(TokenType::Slash)
                 }
             }
+            b'"' => self.scan_string(),
             b' ' | b'\t' | b'\r' => {}
             b'\n' => self.current_line += 1,
             _ => {
@@ -110,6 +111,29 @@ impl Scanner {
         }
     }
 
+    //Separate loop for building the Vec<u8> that will be stored for strings.
+    //Does not append unterminated strings to the output stream of tokens, and increments the lines scanned for each newline
+    //In the String.
+    fn scan_string(&mut self) {
+        let mut result_string: Vec<u8> = Vec::new();
+        loop {
+            match self.source.next() {
+                Some(b'"') => break,
+                Some(byte) => {
+                    if byte == b'\n' {
+                        self.current_line += 1;
+                    }
+                    result_string.push(byte);
+                }
+                None => {
+                    report_error(self.current_line, "Unterminated String");
+                    return;
+                }
+            }
+        }
+
+        self.push_new_token(TokenType::String(result_string));
+    }
     fn scan_tokens(mut self) -> Vec<Token> {
         while let Some(_) = self.source.peek() {
             self.scan_token();
@@ -287,10 +311,30 @@ mod test {
             #[test]
             fn matches_enclosed_in_string() {
                 let input: Vec<u8> = "\"Hello, World! ()\"".bytes().collect();
-                let expected_output = assemble_token_array(vec![(
-                    TokenType::String("Hello, World! ()".bytes().collect()),
-                    1,
-                )]);
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::String("Hello, World! ()".bytes().collect()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn updates_line_count_on_newline_in_string() {
+                let input: Vec<u8> = "\"Hello, World!\n ()\"".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::String("Hello, World!\n ()".bytes().collect()), 2),
+                    (TokenType::EOF, 2),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+
+            #[test]
+            fn errors_on_unenclosed_string() {
+                let input: Vec<u8> = "\"Hello, World! ()".bytes().collect();
+                let expected_output = assemble_token_array(vec![(TokenType::EOF, 1)]);
                 let actual_output = scan(input);
 
                 assert_eq!(expected_output, actual_output);
