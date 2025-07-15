@@ -1,5 +1,4 @@
 mod lox;
-use anyhow;
 use std::{fs, io, process};
 
 pub fn run_file(input_file: String) {
@@ -7,11 +6,11 @@ pub fn run_file(input_file: String) {
     match file_contents {
         Ok(file_contents) => {
             if let Err(e) = lox::run(file_contents) {
-                eprintln!("Error: {}", e.to_string());
+                eprintln!("Error: {}", e);
             }
         }
         Err(e) => {
-            eprintln!("Error Reading File: {}", e.to_string());
+            eprintln!("Error Reading File: {}", e);
             process::exit(65);
         }
     }

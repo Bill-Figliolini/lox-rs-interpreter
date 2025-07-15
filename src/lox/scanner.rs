@@ -118,7 +118,10 @@ impl Scanner {
         let mut result_string: Vec<u8> = Vec::new();
         loop {
             match self.source.next() {
-                Some(b'"') => break,
+                Some(b'"') => {
+                    self.push_new_token(TokenType::String(result_string));
+                    return;
+                }
                 Some(byte) => {
                     if byte == b'\n' {
                         self.current_line += 1;
@@ -131,11 +134,9 @@ impl Scanner {
                 }
             }
         }
-
-        self.push_new_token(TokenType::String(result_string));
     }
     fn scan_tokens(mut self) -> Vec<Token> {
-        while let Some(_) = self.source.peek() {
+        while self.source.peek().is_some() {
             self.scan_token();
         }
 
