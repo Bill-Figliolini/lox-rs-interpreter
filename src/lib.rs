@@ -20,15 +20,16 @@ pub fn run_sandbox() {
     let mut line: String = String::new();
     loop {
         print!("> ");
-        if let Ok(val) = stdin.read_line(&mut line) {
-            if val == 0 {
-                break;
+        match stdin.read_line(&mut line) {
+            Ok(val) => {
+                if val == 0 {
+                    break;
+                }
+                if let Err(e) = lox::run(line.as_bytes().to_vec()) {
+                    eprintln!("{}", e);
+                }
             }
-            if let Err(e) = lox::run(line.as_bytes().to_vec()) {
-                eprintln!("{}", e);
-            }
-        } else {
-            eprintln!("Error: ")
-        };
+            Err(e) => eprintln!("Error: {}", e),
+        }
     }
 }
