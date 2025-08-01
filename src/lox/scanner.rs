@@ -103,6 +103,7 @@ impl Scanner {
                 }
             }
             b'"' => self.scan_string(),
+            digit if digit.is_ascii_digit() => self.scan_number(digit),
             b' ' | b'\t' | b'\r' => {}
             b'\n' => self.current_line += 1,
             _ => {
@@ -135,6 +136,51 @@ impl Scanner {
             }
         }
     }
+
+    fn scan_number(&mut self, first_digit: u8) {
+        let mut unparsed_number: Vec<u8> = Vec::new();
+        unparsed_number.push(first_digit);
+        loop {
+            match self.source.next() {
+                Some(d) if d.is_ascii_digit() => {
+                    unparsed_number.push(d);
+                }
+                Some(b'_') => {}
+                Some(b'.') => {
+                    if self.source.peek().is_some_and(|d| d.is_ascii_digit()) {
+                        unparsed_number.push(b'.');
+                        break;
+                    }
+                    self.push_number_token(unparsed_number);
+                    self.push_new_token(TokenType::Dot);
+                    return;
+                }
+                _ => {
+                    self.push_number_token(unparsed_number);
+                    return;
+                }
+            }
+        }
+        loop {
+            match self.source.next() {
+                Some(d) if d.is_ascii_digit() => unparsed_number.push(d),
+                Some(b'_') => {}
+                _ => {
+                    self.push_number_token(unparsed_number);
+                    return;
+                }
+            }
+        }
+    }
+
+    fn push_number_token(&mut self, unparsed_number: Vec<u8>) {
+        let parsed_number = String::from_utf8(unparsed_number)
+            .expect("Only Ascii characters should be in number")
+            .parse::<f64>()
+            .expect("Should always be a valid number");
+        self.push_new_token(TokenType::Number(parsed_number));
+    }
+
     fn scan_tokens(mut self) -> Vec<Token> {
         while self.source.peek().is_some() {
             self.scan_token();
@@ -341,10 +387,47 @@ mod test {
                 assert_eq!(expected_output, actual_output);
             }
         }
-        mod nubmers {
+        mod numbers {
             use super::*;
+            #[test]
+            fn matches_valid_numbers() {
+                let input: Vec<u8> = "123.456".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Number(123.456), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn does_not_append_dots() {
+                let input: Vec<u8> = "123. ".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Number(123.0), 1),
+                    (TokenType::Dot, 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn can_be_spaced_with_underscores() {
+                let input: Vec<u8> = "123_456.789_1011".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Number(123456.7891011), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
         }
         mod identifiers {
+            use super::*;
+        }
+        mod reserved_words {
             use super::*;
         }
     }
