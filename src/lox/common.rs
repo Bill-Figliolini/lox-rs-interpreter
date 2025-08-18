@@ -66,7 +66,7 @@ pub fn report_error(line_number: usize, error_message: &str) {
     eprintln!("[line {line_number}] Error: {error_message}");
 }
 
-fn new_reserved_words() -> HashMap<Vec<u8>, TokenType> {
+fn new_reserved_words_lookup() -> HashMap<Vec<u8>, TokenType> {
     let mut reserved_words = HashMap::new();
     //Logical operators and booleans
     reserved_words.insert(b"true".to_vec(), TokenType::True);
