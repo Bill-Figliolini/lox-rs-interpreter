@@ -104,6 +104,9 @@ impl Scanner {
             }
             b'"' => self.scan_string(),
             digit if digit.is_ascii_digit() => self.scan_number(digit),
+            character if character.is_ascii_alphabetic() || character == b'_' => {
+                self.scan_identifier(character)
+            }
             b' ' | b'\t' | b'\r' => {}
             b'\n' => self.current_line += 1,
             _ => {
@@ -172,6 +175,8 @@ impl Scanner {
             }
         }
     }
+
+    fn scan_identifier(&mut self, character: u8) {}
 
     fn push_number_token(&mut self, unparsed_number: Vec<u8>) {
         let parsed_number = String::from_utf8(unparsed_number)
@@ -258,7 +263,7 @@ mod test {
                 TokenType::Semicolon,
                 TokenType::Star,
             ];
-            let input_output_vec = input_vec.into_iter().zip(output_vec.into_iter());
+            let input_output_vec = input_vec.into_iter().zip(output_vec);
             for (input, output) in input_output_vec {
                 single_char_test(input, output);
             }
@@ -286,7 +291,7 @@ mod test {
                     TokenType::GreaterEqual,
                     TokenType::LessEqual,
                 ];
-                let input_output_vec = input.into_iter().zip(output.into_iter());
+                let input_output_vec = input.into_iter().zip(output);
                 for (input, output) in input_output_vec {
                     double_char_test_positive(input, output);
                 }
@@ -309,7 +314,7 @@ mod test {
             fn properly() {
                 let input = vec![b'!', b'>', b'<'];
                 let output = vec![TokenType::Bang, TokenType::Greater, TokenType::Less];
-                let input_output_vec = input.into_iter().zip(output.into_iter());
+                let input_output_vec = input.into_iter().zip(output);
                 for (input, output) in input_output_vec {
                     double_char_test_negative(input, output);
                 }
@@ -426,6 +431,12 @@ mod test {
         }
         mod identifiers {
             use super::*;
+            #[test]
+            fn matches_name_starting_with_letter() {}
+            #[test]
+            fn matches_name_starting_with_underscore() {}
+            #[test]
+            fn matches_name_with_reserved_word_overlap() {}
         }
         mod reserved_words {
             use super::*;
