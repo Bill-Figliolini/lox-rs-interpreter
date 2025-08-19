@@ -143,24 +143,22 @@ impl Scanner {
     //In the String.
     fn scan_string(&mut self) {
         let mut result_string: Vec<u8> = Vec::new();
-        loop {
-            match self.source.next() {
-                Some(b'"') => {
+        while let Some(character) = self.source.next() {
+            match character {
+                b'"' => {
                     self.push_new_token(TokenType::String(result_string));
                     return;
                 }
-                Some(byte) => {
-                    if byte == b'\n' {
+                _ => {
+                    if character == b'\n' {
                         self.current_line += 1;
                     }
-                    result_string.push(byte);
-                }
-                None => {
-                    report_error(self.current_line, "Unterminated String");
-                    return;
+                    result_string.push(character);
                 }
             }
         }
+        report_error(self.current_line, "Unterminated String");
+        return;
     }
 
     fn scan_number(&mut self, first_digit: u8) {
