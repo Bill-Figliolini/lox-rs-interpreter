@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+phf = { version = "0.12.1", features = ["macros"] }
 anyhow = "1.0.98"
-phf = "0.12.1"
+phf_macros = "0.12.1"
