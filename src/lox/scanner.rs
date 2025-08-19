@@ -1,4 +1,5 @@
 use crate::lox::common::{Token, TokenType, report_error};
+use phf::phf_map;
 
 // Contains state for the process of scanning through code that the user input
 //
@@ -12,6 +13,28 @@ struct Scanner {
     output: Vec<Token>,
     current_line: usize,
 }
+
+static KEYWORDS: phf::Map<&'static [u8], TokenType> = phf_map! {
+    //Logical and boolena
+    b"and" => TokenType::And,
+    b"or" => TokenType::Or,
+    b"true" => TokenType::True,
+    b"false" => TokenType::False,
+    //Control flow
+    b"if" => TokenType::If,
+    b"else" => TokenType::Else,
+    b"while" => TokenType::While,
+    b"for" => TokenType::For,
+    //Function and Variables
+    b"fun" => TokenType::Fun,
+    b"return" => TokenType::Return,
+    b"print" => TokenType::Print,
+    b"class" => TokenType::Class,
+    b"this" => TokenType::This,
+    b"super" => TokenType::Super,
+    b"var" => TokenType::Var,
+    b"nil" => TokenType::Nil,
+};
 
 impl Scanner {
     // ## Input:
@@ -101,7 +124,9 @@ impl Scanner {
                 }
                 b'"' => self.scan_string(),
                 digit if digit.is_ascii_digit() => self.scan_number(digit),
-                character if is_valid_identifier(character) => self.scan_identifier(character),
+                character if is_valid_identifier_start(character) => {
+                    self.scan_identifier(character)
+                }
                 b' ' | b'\t' | b'\r' => {}
                 b'\n' => self.current_line += 1,
                 _ => {
@@ -173,7 +198,28 @@ impl Scanner {
             }
         }
     }
-    fn scan_identifier(&mut self, character: u8) {}
+    fn scan_identifier(&mut self, first_character: u8) {
+        let mut identifier: Vec<u8> = Vec::new();
+        identifier.push(first_character);
+        while let Some(next_char) = self.source.peek() {
+            if !is_valid_identifier(*next_char) {
+                break;
+            }
+            identifier.push(
+                self.source
+                    .next()
+                    .expect("next_char already verified as not None"),
+            );
+        }
+        match KEYWORDS.get(identifier.as_ref()) {
+            Some(token_type) => {
+                self.push_new_token(token_type.clone());
+            }
+            None => {
+                self.push_new_token(TokenType::Identifier(identifier));
+            }
+        }
+    }
 
     fn push_number_token(&mut self, unparsed_number: Vec<u8>) {
         let parsed_number = String::from_utf8(unparsed_number)
@@ -199,13 +245,16 @@ impl Scanner {
         }
     }
 }
-fn is_valid_identifier(character: u8) -> bool {
+fn is_valid_identifier_start(character: u8) -> bool {
     character.is_ascii_alphabetic() || character == b'_'
+}
+fn is_valid_identifier(character: u8) -> bool {
+    character.is_ascii_alphanumeric() || character == b'_'
 }
 
 // Scan takes in a Vec of valid UTF8 bytes, and converts them into a Vec of Tokens for later processing.
 pub fn scan(source: Vec<u8>) -> Vec<Token> {
-    let mut scanner = Scanner::new(source);
+    let scanner = Scanner::new(source);
     scanner.scan_tokens()
 }
 
