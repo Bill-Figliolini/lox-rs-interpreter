@@ -36,81 +36,81 @@ impl Scanner {
     //Primary function for handling scanning the input bytes.
     //  Consumes each byte in the source iterator, matches it with the corresponding token type, and makes a token
     //  Works with 1 byte of lookahead, as in the case of slashes for comments, and double-character operators like ==
-    fn scan_token(&mut self) {
-        let source_byte = self
-            .source
-            .next()
-            .expect("Called only when iterator is not empty");
-        match source_byte {
-            b'(' => self.push_new_token(TokenType::LeftParen),
-            b')' => self.push_new_token(TokenType::RightParen),
+    fn scan_tokens(mut self) -> Vec<Token> {
+        while let Some(source_byte) = self.source.next() {
+            match source_byte {
+                b'(' => self.push_new_token(TokenType::LeftParen),
+                b')' => self.push_new_token(TokenType::RightParen),
 
-            b'{' => self.push_new_token(TokenType::LeftBrace),
-            b'}' => self.push_new_token(TokenType::RightBrace),
+                b'{' => self.push_new_token(TokenType::LeftBrace),
+                b'}' => self.push_new_token(TokenType::RightBrace),
 
-            b',' => self.push_new_token(TokenType::Comma),
-            b'.' => self.push_new_token(TokenType::Dot),
+                b',' => self.push_new_token(TokenType::Comma),
+                b'.' => self.push_new_token(TokenType::Dot),
 
-            b'-' => self.push_new_token(TokenType::Minus),
-            b'+' => self.push_new_token(TokenType::Plus),
-            b'*' => self.push_new_token(TokenType::Star),
+                b'-' => self.push_new_token(TokenType::Minus),
+                b'+' => self.push_new_token(TokenType::Plus),
+                b'*' => self.push_new_token(TokenType::Star),
 
-            b';' => self.push_new_token(TokenType::Semicolon),
-            b'!' => {
-                let result = if self.match_next(b'=') {
-                    TokenType::BangEqual
-                } else {
-                    TokenType::Bang
-                };
-                self.push_new_token(result);
-            }
-            b'=' => {
-                let result = if self.match_next(b'=') {
-                    TokenType::EqualEqual
-                } else {
-                    TokenType::Equal
-                };
-                self.push_new_token(result);
-            }
-            b'>' => {
-                let result = if self.match_next(b'=') {
-                    TokenType::GreaterEqual
-                } else {
-                    TokenType::Greater
-                };
-                self.push_new_token(result);
-            }
-            b'<' => {
-                let result = if self.match_next(b'=') {
-                    TokenType::LessEqual
-                } else {
-                    TokenType::Less
-                };
-                self.push_new_token(result);
-            }
-            b'\\' => {
-                if self.match_next(b'\\') {
-                    loop {
-                        match self.source.peek() {
-                            None | Some(b'\n') => break,
-                            Some(_) => {
-                                self.source.next();
+                b';' => self.push_new_token(TokenType::Semicolon),
+                b'!' => {
+                    let result = if self.match_next(b'=') {
+                        TokenType::BangEqual
+                    } else {
+                        TokenType::Bang
+                    };
+                    self.push_new_token(result);
+                }
+                b'=' => {
+                    let result = if self.match_next(b'=') {
+                        TokenType::EqualEqual
+                    } else {
+                        TokenType::Equal
+                    };
+                    self.push_new_token(result);
+                }
+                b'>' => {
+                    let result = if self.match_next(b'=') {
+                        TokenType::GreaterEqual
+                    } else {
+                        TokenType::Greater
+                    };
+                    self.push_new_token(result);
+                }
+                b'<' => {
+                    let result = if self.match_next(b'=') {
+                        TokenType::LessEqual
+                    } else {
+                        TokenType::Less
+                    };
+                    self.push_new_token(result);
+                }
+                b'\\' => {
+                    if self.match_next(b'\\') {
+                        loop {
+                            match self.source.peek() {
+                                None | Some(b'\n') => break,
+                                Some(_) => {
+                                    self.source.next();
+                                }
                             }
                         }
+                    } else {
+                        self.push_new_token(TokenType::Slash)
                     }
-                } else {
-                    self.push_new_token(TokenType::Slash)
+                }
+                b'"' => self.scan_string(),
+                digit if digit.is_ascii_digit() => self.scan_number(digit),
+                character if is_valid_identifier(character) => self.scan_identifier(character),
+                b' ' | b'\t' | b'\r' => {}
+                b'\n' => self.current_line += 1,
+                _ => {
+                    report_error(self.current_line, "Unexpected character.");
                 }
             }
-            b'"' => self.scan_string(),
-            digit if digit.is_ascii_digit() => self.scan_number(digit),
-            character if is_valid_identifier(character) => self.scan_identifier(character),
-            b' ' | b'\t' | b'\r' => {}
-            b'\n' => self.current_line += 1,
-            _ => {
-                report_error(self.current_line, "Unexpected character.");
-            }
         }
+        self.push_new_token(TokenType::EOF);
+        self.output
     }
 
     //Separate loop for building the Vec<u8> that will be stored for strings.
@@ -183,15 +183,6 @@ impl Scanner {
         self.push_new_token(TokenType::Number(parsed_number));
     }
 
-    fn scan_tokens(mut self) -> Vec<Token> {
-        while self.source.peek().is_some() {
-            self.scan_token();
-        }
-
-        self.push_new_token(TokenType::EOF);
-        self.output
-    }
-
     //Peeks ahead for potential double-character matches.
     //Returns true and pops if the peek is what the calling function expects, and false otherswise
     fn match_next(&mut self, expected: u8) -> bool {
@@ -214,7 +205,7 @@ fn is_valid_identifier(character: u8) -> bool {
 
 // Scan takes in a Vec of valid UTF8 bytes, and converts them into a Vec of Tokens for later processing.
 pub fn scan(source: Vec<u8>) -> Vec<Token> {
-    let scanner = Scanner::new(source);
+    let mut scanner = Scanner::new(source);
     scanner.scan_tokens()
 }
 
