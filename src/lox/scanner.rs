@@ -104,9 +104,7 @@ impl Scanner {
             }
             b'"' => self.scan_string(),
             digit if digit.is_ascii_digit() => self.scan_number(digit),
-            character if character.is_ascii_alphabetic() || character == b'_' => {
-                self.scan_identifier(character)
-            }
+            character if is_valid_identifier(character) => self.scan_identifier(character),
             b' ' | b'\t' | b'\r' => {}
             b'\n' => self.current_line += 1,
             _ => {
@@ -175,7 +173,6 @@ impl Scanner {
             }
         }
     }
-
     fn scan_identifier(&mut self, character: u8) {}
 
     fn push_number_token(&mut self, unparsed_number: Vec<u8>) {
@@ -211,6 +208,10 @@ impl Scanner {
         }
     }
 }
+fn is_valid_identifier(character: u8) -> bool {
+    character.is_ascii_alphabetic() || character == b'_'
+}
+
 // Scan takes in a Vec of valid UTF8 bytes, and converts them into a Vec of Tokens for later processing.
 pub fn scan(source: Vec<u8>) -> Vec<Token> {
     let scanner = Scanner::new(source);
@@ -439,6 +440,9 @@ mod test {
             fn matches_name_with_reserved_word_overlap() {}
         }
         mod reserved_words {
+            use super::*;
+        }
+        mod identifier_and_reserved_performance {
             use super::*;
         }
     }
