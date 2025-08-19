@@ -473,11 +473,56 @@ mod test {
         mod identifiers {
             use super::*;
             #[test]
-            fn matches_name_starting_with_letter() {}
+            fn matches_name_starting_with_letter() {
+                let input: Vec<u8> = "Hello".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Identifier(input.clone()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
             #[test]
-            fn matches_name_starting_with_underscore() {}
+            fn matches_name_starting_with_underscore() {
+                let input: Vec<u8> = "_Hello".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Identifier(input.clone()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
             #[test]
-            fn matches_name_with_reserved_word_overlap() {}
+            fn matches_name_with_reserved_word_overlap() {
+                let input: Vec<u8> = "variant".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Identifier(input.clone()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn allows_numbers_after_identifier_start() {
+                let input: Vec<u8> = "Hello123".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Identifier(input.clone()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn does_not_match_name_starting_with_number() {
+                let input: Vec<u8> = "1Hello".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Number(1.0), 1),
+                    (TokenType::Identifier("Hello".bytes().collect()), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
         }
         mod reserved_words {
             use super::*;
