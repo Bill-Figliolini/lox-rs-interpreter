@@ -166,13 +166,21 @@ impl Scanner {
     fn scan_number(&mut self, first_digit: u8) {
         let mut unparsed_number: Vec<u8> = Vec::new();
         unparsed_number.push(first_digit);
-        loop {
-            match self.source.next() {
-                Some(d) if d.is_ascii_digit() => {
-                    unparsed_number.push(d);
+        while let Some(potential_num) = self.source.peek() {
+            eprintln!("Number is: {}", &potential_num.to_string());
+            match potential_num {
+                d if d.is_ascii_digit() => {
+                    unparsed_number.push(
+                        self.source
+                            .next()
+                            .expect("potential_num already verified as not None"),
+                    );
                 }
-                Some(b'_') => {}
-                Some(b'.') => {
+                b'_' => _ = self.source.next().expect("unused underscore"),
+                b'.' => {
+                    self.source
+                        .next()
+                        .expect("potential_num already verified as not None");
                     if self.source.peek().is_some_and(|d| d.is_ascii_digit()) {
                         unparsed_number.push(b'.');
                         break;
@@ -182,21 +190,27 @@ impl Scanner {
                     return;
                 }
                 _ => {
+                    eprintln!("Number token pushed at _");
                     self.push_number_token(unparsed_number);
                     return;
                 }
             }
         }
-        loop {
-            match self.source.next() {
-                Some(d) if d.is_ascii_digit() => unparsed_number.push(d),
-                Some(b'_') => {}
+        while let Some(potential_num) = self.source.peek() {
+            eprintln!("Number is: {}", &potential_num.to_string());
+            match potential_num {
+                d if d.is_ascii_digit() => unparsed_number.push(
+                    self.source
+                        .next()
+                        .expect("potential_num already verified as not None"),
+                ),
+                b'_' => _ = self.source.next().expect("unused underscore"),
                 _ => {
-                    self.push_number_token(unparsed_number);
-                    return;
+                    break;
                 }
             }
         }
+        self.push_number_token(unparsed_number);
     }
     fn scan_identifier(&mut self, first_character: u8) {
         let mut identifier: Vec<u8> = Vec::new();
@@ -459,7 +473,18 @@ mod test {
                 assert_eq!(expected_output, actual_output);
             }
             #[test]
-            fn can_be_spaced_with_underscores() {
+            fn can_be_spaced_with_underscores_before_dot() {
+                let input: Vec<u8> = "123_456.7891011".bytes().collect();
+                let expected_output = assemble_token_array(vec![
+                    (TokenType::Number(123456.7891011), 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn can_be_spaced_with_underscores_after_dot() {
                 let input: Vec<u8> = "123_456.789_1011".bytes().collect();
                 let expected_output = assemble_token_array(vec![
                     (TokenType::Number(123456.7891011), 1),
