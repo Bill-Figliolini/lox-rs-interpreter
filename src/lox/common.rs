@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     //Single Character
