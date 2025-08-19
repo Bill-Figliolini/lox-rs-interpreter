@@ -549,6 +549,19 @@ mod test {
         }
         mod reserved_words {
             use super::*;
+            fn reserved_word_test(input: Vec<u8>, result: TokenType) {
+                let expected_output: Vec<Token> =
+                    vec![Token::new(result, 1), Token::new(TokenType::EOF, 1)];
+                let actual_output = scan(input);
+
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn matches_all_reserved_words() {
+                for (key, value) in KEYWORDS.entries() {
+                    reserved_word_test(key.to_vec(), value.clone());
+                }
+            }
         }
         mod identifier_and_reserved_performance {
             use super::*;
