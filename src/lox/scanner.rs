@@ -407,6 +407,36 @@ mod test {
                 let actual_output = scan(input);
                 assert_eq!(expected_output, actual_output);
             }
+            #[test]
+            fn block_comments_continue_until_terminated_midline() {
+                let input: Vec<u8> = "( \\* rust *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn block_comments_continue_increment_linecount() {
+                let input: Vec<u8> = "( \\* rust\n *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 2),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn block_comments_continue_allow_nesting() {
+                let input: Vec<u8> = "( \\* \\* rust *\\ *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
         }
     }
     mod literals {
