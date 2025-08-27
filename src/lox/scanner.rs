@@ -108,20 +108,21 @@ impl Scanner {
                     };
                     self.push_new_token(result);
                 }
-                b'\\' => {
-                    if self.match_next(b'\\') {
-                        loop {
-                            match self.source.peek() {
-                                None | Some(b'\n') => break,
-                                Some(_) => {
-                                    self.source.next();
-                                }
+                b'\\' => match self.source.peek() {
+                    Some(b'\\') => loop {
+                        match self.source.peek() {
+                            None | Some(b'\n') => break,
+                            Some(_) => {
+                                self.source.next();
                             }
                         }
-                    } else {
-                        self.push_new_token(TokenType::Slash)
+                    },
+                    Some(b'*') => {
+                        self.source.next();
+                        self.scan_block_comment()
                     }
-                }
+                    Some(_) | None => self.push_new_token(TokenType::Slash),
+                },
                 b'"' => self.scan_string(),
                 digit if digit.is_ascii_digit() => self.scan_number(digit),
                 character if is_valid_identifier_start(character) => {
@@ -229,6 +230,26 @@ impl Scanner {
             }
             None => {
                 self.push_new_token(TokenType::Identifier(identifier));
+            }
+        }
+    }
+    fn scan_block_comment(&mut self) {
+        let mut depth: usize = 0;
+        while let Some(next_char) = self.source.next() {
+            match next_char {
+                b'*' if self.source.peek() == Some(b'\\').as_ref() => {
+                    self.source.next();
+                    if depth == 0 {
+                        return;
+                    }
+                    depth -= 1;
+                }
+                b'\\' if self.source.peek() == Some(b'*').as_ref() => {
+                    depth += 1;
+                    self.source.next();
+                }
+                b'\n' => self.current_line += 1,
+                _ => (),
             }
         }
     }
@@ -404,6 +425,39 @@ mod test {
                     (TokenType::EOF, 2),
                 ]);
 
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn block_comments_continue_until_terminated_midline() {
+                let input: Vec<u8> = "( \\* rust *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                    (TokenType::EOF, 1),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn block_comments_continue_increment_linecount() {
+                let input: Vec<u8> = "( \\* rust\n *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 2),
+                    (TokenType::EOF, 2),
+                ]);
+                let actual_output = scan(input);
+                assert_eq!(expected_output, actual_output);
+            }
+            #[test]
+            fn block_comments_continue_allow_nesting() {
+                let input: Vec<u8> = "( \\* \\* rust *\\ *\\ )".bytes().collect();
+                let expected_output: Vec<Token> = assemble_token_array(vec![
+                    (TokenType::LeftParen, 1),
+                    (TokenType::RightParen, 1),
+                    (TokenType::EOF, 1),
+                ]);
                 let actual_output = scan(input);
                 assert_eq!(expected_output, actual_output);
             }
