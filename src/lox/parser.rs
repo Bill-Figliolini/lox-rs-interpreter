@@ -13,6 +13,7 @@
 /// Good use case for Rust, though. Usage of enums for the heads and structs for the bodies
 /// should do the trick By the same token, consideration should go to other rust-idiomatic
 /// approaches
+use crate::lox::token;
 
 enum Expr {
     Literal(),

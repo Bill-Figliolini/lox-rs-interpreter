@@ -1,4 +1,4 @@
-use crate::lox::common::{Token, TokenType, report_error};
+use crate::lox::token::{Token, TokenType, report_error};
 use phf::phf_map;
 
 // Contains state for the process of scanning through code that the user input
