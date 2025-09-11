@@ -14,14 +14,14 @@
 /// should do the trick By the same token, consideration should go to other rust-idiomatic
 /// approaches
 
-enum Expr {
+pub enum Expr {
     Literal(Literal),
     Unary(Unary),
     Binary(Binary),
     Grouping(Grouping),
 }
 
-enum Operator {
+pub enum Operator {
     //Member operator
     Dot,
     //Arithmetic Operators
@@ -44,21 +44,21 @@ enum Operator {
     GreaterEqual,
 }
 
-enum Literal {
+pub enum Literal {
     Number(f64),
     String(String),
     Bool(bool),
     Nil,
 }
-struct Unary {
+pub struct Unary {
     operator: Operator,
     right: Box<Expr>,
 }
-struct Binary {
+pub struct Binary {
     left: Box<Expr>,
     operator: Operator,
     right: Box<Expr>,
 }
-struct Grouping {
+pub struct Grouping {
     expression: Box<Expr>,
 }
